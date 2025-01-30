@@ -1,0 +1,21 @@
+{
+  "name": "gantt-demo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.14",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.5"
+  },
+  "dependencies": {
+    "@thoughtspot/ts-chart-sdk": "^1.0.0",
+    "highcharts": "^12.1.2",
+    "lodash": "^4.17.21"
+  }
+}
