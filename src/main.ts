@@ -2,7 +2,6 @@
 import {
   ChartConfig,
   ChartModel,
-  ColumnType,
   Query,
   getChartContext,
 } from '@thoughtspot/ts-chart-sdk';
@@ -102,7 +101,7 @@ const renderChart = (ctx: any) => {
 };
 
 const init = async () => {
-  const ctx = await getChartContext({
+    await getChartContext({
       getDefaultChartConfig: (chartModel: ChartModel): ChartConfig[] => {
           const columns = chartModel.columns;
 
