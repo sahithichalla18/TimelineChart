@@ -2,18 +2,21 @@
 import {
     ChartConfig,
     ChartModel,
+    ChartToTSEvent,
+    CustomChartContext,
     Query,
     getChartContext,
-  } from '@thoughtspot/ts-chart-sdk';
-  import Highcharts from 'highcharts/es-modules/masters/highcharts.src';
-  import 'highcharts/es-modules/masters/modules/gantt.src';
-  import _ from 'lodash';
-  
-  const getDataModel = (chartModel: any) => {
+} from '@thoughtspot/ts-chart-sdk';
+import Highcharts from 'highcharts/es-modules/masters/highcharts.src';
+import 'highcharts/es-modules/masters/modules/gantt.src';
+import _ from 'lodash';
+
+const getDataModel = (chartModel: any) => {
     const dataArr = chartModel.data[0].data;
+    const data = Array.isArray(dataArr) ? dataArr[0].dataValue : dataArr.dataValue
     console.log("init....0")  
     // create point from data
-    const points = dataArr[0].dataValue.map((_val: string, idx: number) => {
+    const points =  data.map((_val: string, idx: number) => {
         return {
             id: `${dataArr[0].dataValue[idx]} ${dataArr[1].dataValue[idx]}`,
             parent: dataArr[0].dataValue[idx],
@@ -27,9 +30,9 @@ import {
             dependency: (dataArr[5] && dataArr[5].dataValue[idx] !== null && dataArr[5].dataValue[idx] !== undefined) 
       ? `${dataArr[0].dataValue[idx]} ${dataArr[5].dataValue[idx]}` 
       : 'N/A',
-        };
+    };
     });
-  
+
     // create projects from points & data
     const projects = _.uniq(dataArr[0].dataValue);
     const dataSeries = projects.map((project) => {
@@ -47,39 +50,39 @@ import {
             ],
         };
     });
-  
+
     // get max and min date
     const maxDate = _.max([...dataArr[2].dataValue, ...dataArr[2].dataValue]);
     const minDate = _.min([...dataArr[2].dataValue, ...dataArr[2].dataValue]);
-  
+
     return {
         dataSeries,
         maxDate,
         minDate,
     };
-  };
-  
-  const renderChart = (ctx: any) => {
+};
+
+const render = (ctx: any) => {
     const chartModel = ctx.getChartModel();
     console.log('chartModel:', chartModel);
     console.log('data:', chartModel.data);
-  
+
     const dataModel = getDataModel(chartModel);
-  
+
     console.log('dataModel:', dataModel);
-  
+
     // THE CHART
     Highcharts.ganttChart('container', {
         title: {
             text: 'Gantt Chart with Progress Indicators',
             align: 'left',
         },
-  
+
         xAxis: {
             min: dataModel.minDate,
             max: dataModel.maxDate,
         },
-  
+
         accessibility: {
             point: {
                 descriptionFormat:
@@ -88,7 +91,7 @@ import {
                     'Start {x:%Y-%m-%d}, end {x2:%Y-%m-%d}.',
             },
         },
-  
+
         lang: {
             accessibility: {
                 axis: {
@@ -97,26 +100,41 @@ import {
                 },
             },
         },
-  
+
         series: dataModel.dataSeries,
     } as any);
     return Promise.resolve();
-  };
-  
-  const init = async () => {
-      const ctx = await getChartContext({
+};
+
+const renderChart = async (ctx: CustomChartContext): Promise<void> => {
+    try {
+        ctx.emitEvent(ChartToTSEvent.RenderStart);
+        render(ctx);
+    } catch (e) {
+        ctx.emitEvent(ChartToTSEvent.RenderError, {
+            hasError: true,
+            error: e,
+        });
+    } finally {
+        ctx.emitEvent(ChartToTSEvent.RenderComplete);
+    }
+};
+
+const init = async () => {
+    const ctx = await getChartContext({
         getDefaultChartConfig: (chartModel: ChartModel): ChartConfig[] => {
             const columns = chartModel.columns;
+
             // Here we assume that the columns are always coming in the
             // following order.
             // [Project Name, Task, Start Date, End Date, Completion]
-  
+
             // TBD: do basic validation here to ensure that the chart is renderable
             if (columns.length < 4) {
                 // not possible to plot a chart
                 return [];
             }
-  
+
             const chartConfig: ChartConfig = {
                 key: 'default',
                 dimensions: [
@@ -164,9 +182,9 @@ import {
                     ),
             );
         },
-        renderChart: (context) => renderChart(context),
+        renderChart: (context) => renderChart(context)
     });
-    await renderChart(ctx)
-  };
-  
-  init();
+    await renderChart(ctx);
+};
+
+init();
